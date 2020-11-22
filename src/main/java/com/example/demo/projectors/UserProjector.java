@@ -1,9 +1,14 @@
 package com.example.demo.projectors;
 
-import com.example.demo.model.*;
+import com.example.demo.events.*;
+import com.example.demo.model.Address;
+import com.example.demo.model.UserAddress;
 import com.example.demo.repositories.UserReadRepository;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 public class UserProjector {
     UserReadRepository readRepository;
@@ -12,31 +17,47 @@ public class UserProjector {
         this.readRepository = readRepository;
     }
 
-    public void project(User user) {
-        UserContact userContact = Optional.ofNullable(readRepository.getUserContact(user.getUserid()))
-                .orElse(new UserContact());
-
-        Map<String, Set<Contact>> contactByType = new HashMap<>();
-        for (Contact contact : user.getContacts()) {
-            Set<Contact> contacts = Optional.ofNullable(contactByType.get(contact.getType())).orElse(new HashSet<>());
-            contacts.add(contact);
-            contactByType.put(contact.getType(), contacts);
+    public void project(String userId, List<Event> events) {
+        for (Event event : events) {
+            if (event instanceof UserAddressAddedEvent)
+                apply(userId, (UserAddressAddedEvent) event);
+            if (event instanceof UserAddressRemovedEvent)
+                apply(userId, (UserAddressRemovedEvent) event);
+            if (event instanceof UserContactAddedEvent)
+                apply(userId, (UserContactAddedEvent) event);
+            if (event instanceof UserContactRemovedEvent)
+                apply(userId, (UserContactRemovedEvent) event);
         }
-        userContact.setContactByType(contactByType);
-        readRepository.addUserContact(user.getUserid(), userContact);
+    }
 
-        UserAddress userAddress = Optional.ofNullable(readRepository.getUserAddress(user.getUserid()))
+    public void apply(String userId, UserAddressAddedEvent event) {
+        Address address = new Address(event.getCity(), event.getState(), event.getPostCode());
+        UserAddress userAddress = Optional.ofNullable(readRepository.getUserAddress(userId))
                 .orElse(new UserAddress());
+        Set<Address> addresses = Optional.ofNullable(userAddress.getAddressByRegion().get(address.getState()))
+                .orElse(new HashSet<>());
+        addresses.add(address);
+        userAddress.getAddressByRegion().put(address.getState(), addresses);
+        readRepository.addUserAddress(userId, userAddress);
+    }
 
-        Map<String, Set<Address>> addressByRegion = new HashMap<>();
-        for (Address address : user.getAddresses()) {
-            Set<Address> addresses = Optional.ofNullable(
-                    addressByRegion.get(address.getState()))
-                    .orElse(new HashSet<>());
-            addresses.add(address);
-            addressByRegion.put(address.getState(), addresses);
+    public void apply(String userId, UserAddressRemovedEvent event) {
+        Address address = new Address(event.getCity(), event.getState(), event.getPostcode());
+        UserAddress userAddress = readRepository.getUserAddress(userId);
+        if (userAddress != null) {
+            Set<Address> addresses = userAddress.getAddressByRegion().get(address.getState());
+            if (addresses != null)
+                addresses.remove(address);
+            readRepository.addUserAddress(userId, userAddress);
         }
-        userAddress.setAddressByRegion(addressByRegion);
-        readRepository.addUserAddress(user.getUserid(), userAddress);
+    }
+
+    public void apply(String userId, UserContactAddedEvent event) {
+        // Similarly handle UserContactAddedEvent event
+    }
+
+    public void apply(String userId, UserContactRemovedEvent event) {
+        // Similarly handle UserContactRemovedEvent event
     }
 }
+
