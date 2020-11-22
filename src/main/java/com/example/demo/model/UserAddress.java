@@ -10,4 +10,8 @@ public class UserAddress {
     public Map<String, Set<Address>> getAddressByRegion() {
         return addressByRegion;
     }
+
+    public void setAddressByRegion(Map<String, Set<Address>> addressByRegion) {
+        this.addressByRegion = addressByRegion;
+    }
 }

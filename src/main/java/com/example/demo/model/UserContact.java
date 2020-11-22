@@ -10,4 +10,8 @@ public class UserContact {
     public Map<String, Set<Contact>> getContactByType() {
         return contactByType;
     }
+
+    public void setContactByType(Map<String, Set<Contact>> contactByType) {
+        this.contactByType = contactByType;
+    }
 }

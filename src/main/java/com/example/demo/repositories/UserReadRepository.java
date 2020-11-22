@@ -18,4 +18,11 @@ public class UserReadRepository {
         return userAddress.get(userId);
     }
 
+    public void addUserAddress(String userid, UserAddress userAddress) {
+        this.userAddress.put(userid, userAddress);
+    }
+
+    public void addUserContact(String userid, UserContact userContact) {
+        this.userContact.put(userid, userContact);
+    }
 }
